@@ -58,7 +58,6 @@
 #include "DGtal/geometry/volumes/estimation/VoronoiCovarianceMeasure.h"
 #include "DGtal/geometry/curves/estimation/LambdaMST3D.h"
 #include "DGtal/geometry/curves/estimation/FunctorsLambdaMST.h"
-#include "DGtal/geometry/curves/estimation/LambdaMST3DBy2D.h"
 #include "DGtal/io/viewers/Viewer3D.h"
 #include "DGtal/io/readers/PointListReader.h"
 #include "DGtal/io/DrawWithDisplay3DModifier.h"
@@ -437,28 +436,6 @@ bool ComputeLMST ( const PointIterator & begin, const PointIterator & end, Tange
   }
 }
 
-template < typename PointIterator, typename Space, typename TangentSequence, int CONNECTIVITY = 8 >
-bool ComputeLMSTBy2D ( const PointIterator & begin, const PointIterator & end, TangentSequence & tangents, const std::string & output  )
-{
-  typedef typename PointIterator::value_type Point;
-  
-  fstream outputStream;
-  outputStream.open ( ( output + ".lmst" ).c_str(), std::ios::out );
-  outputStream << "X Y Z X Y Z" << endl;
-  
-  LambdaMST3DBy2D < PointIterator, functors::Lambda64Function, CONNECTIVITY > lmst64;
-  lmst64.init ( begin, end );
-  for ( PointIterator it = begin; it != end; ++it )
-  {
-    typename Space::RealVector tangent = lmst64.eval ( *it );
-    if ( tangent.norm() != 0. )
-      tangent = tangent.getNormalized();
-    tangents.push_back ( tangent );
-    outputStream << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << " "
-    << tangent[0] << " " << tangent[1] << " " << tangent[2] << endl;
-  }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace po = boost::program_options;
 
@@ -500,7 +477,7 @@ int main(int argc, char **argv)
   ("tangent,t", "displays the tangents to the curve" )
   ("big-radius,R", po::value<double>()->default_value( 10.0 ), "the radius parameter R in the VCM estimator." )
   ("small-radius,r", po::value<double>()->default_value( 3.0 ), "the radius parameter r in the VCM estimator." )
-  ("method,m", po::value<string>()->default_value( "VCM" ), "the method of tangent computation: VCM (default), L-MST, L-MSTBy2D." )
+  ("method,m", po::value<string>()->default_value( "VCM" ), "the method of tangent computation: VCM (default), L-MST." )
   ("output,o", po::value<string>()->default_value( "3d-curve-tangent-estimations"), "the basename of the output text file which will contain points and tangent vectors: (x y z tx ty tz) per line" )
   ;
   po::positional_options_description pos_opt;
@@ -585,16 +562,9 @@ int main(int argc, char **argv)
     else
       ComputeLMST  < PointIterator, Z3, std::vector< RealVector > > ( sequence.cbegin(), sequence.cend(), tangents, output );
   }
-  else if ( method == "L-MSTBy2D" )
-  {
-    if (vm[ "connectivity" ].as<string>() == "6")
-      ComputeLMSTBy2D  < PointIterator, Z3, std::vector< RealVector >, 4 > ( sequence.cbegin(), sequence.cend(), tangents, output );
-    else
-      ComputeLMSTBy2D  < PointIterator, Z3, std::vector< RealVector > > ( sequence.cbegin(), sequence.cend(), tangents, output );
-  }
   else
   {
-    trace.info() << "Wrong method! Try: VCM, L-MST or L-MSTBy2D" << endl;
+    trace.info() << "Wrong method! Try: VCM or L-MST" << endl;
     abort();
   }
   
