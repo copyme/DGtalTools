@@ -191,12 +191,13 @@ void displayProj2d( Viewer3D<space, kspace> & viewer,
   typedef typename KSpace::Cell Cell;
   typedef typename KSpace::Point Point3d;
   Point3d b = ks.lowerBound();
-  unsigned int lenXY = 0, lenXZ = 0, lenYZ = 0;
-  dss3d.get2DSegmentsLength ( lenXY, lenXZ, lenYZ );
   
   const ArithmeticalDSSComputer2d & dssXY = dss3d.arithmeticalDSS2dXY();
   const ArithmeticalDSSComputer2d & dssXZ = dss3d.arithmeticalDSS2dXZ();
   const ArithmeticalDSSComputer2d & dssYZ = dss3d.arithmeticalDSS2dYZ();
+  unsigned int lenXY = distance ( dssXY.begin(), dssXY.end() );
+  unsigned int lenXZ = distance ( dssXZ.begin(), dssXZ.end() );
+  unsigned int lenYZ = distance ( dssYZ.begin(), dssYZ.end() );
   
   if ( lenXY > lenYZ && lenXZ > lenYZ ) { //XY-plane, XZ-plane
     for ( ConstIterator2d itXY = dssXY.begin(), itXZ = dssXZ.begin(), itPEnd = dssXY.end(); itXY != itPEnd; ++itXY, ++itXZ )
@@ -406,7 +407,7 @@ void ComputeVCM ( const double & R, const double & r,
   outputStream.close();
 }
 
-template < typename PointIterator, typename Space, typename TangentSequence, int CONNECTIVITY = 8 >
+template < typename PointIterator, typename Space, typename TangentSequence, int CONNECTIVITY >
 bool ComputeLMST ( const PointIterator & begin, const PointIterator & end, TangentSequence & tangents, const std::string & output  )
 {
   typedef typename PointIterator::value_type Point;
@@ -553,14 +554,14 @@ int main(int argc, char **argv)
     const double r = vm["small-radius"].as<double>();
     trace.info() << "Small radius r = " << r << endl;
     
-    ComputeVCM < PointIterator, Z3, std::vector< RealVector > > ( R, r, sequence.cbegin(), sequence.cend(), tangents, output );
+    ComputeVCM < PointIterator, Z3, std::vector< RealVector > > ( R, r, sequence.begin(), sequence.end(), tangents, output );
   }
   else if ( method == "L-MST" )
   {
     if (vm[ "connectivity" ].as<string>() == "6")
-      ComputeLMST  < PointIterator, Z3, std::vector< RealVector >, 4 > ( sequence.cbegin(), sequence.cend(), tangents, output );
+      ComputeLMST  < PointIterator, Z3, std::vector< RealVector >, 4 > ( sequence.begin(), sequence.end(), tangents, output );
     else
-      ComputeLMST  < PointIterator, Z3, std::vector< RealVector > > ( sequence.cbegin(), sequence.cend(), tangents, output );
+      ComputeLMST  < PointIterator, Z3, std::vector< RealVector >, 8 > ( sequence.begin(), sequence.end(), tangents, output );
   }
   else
   {
