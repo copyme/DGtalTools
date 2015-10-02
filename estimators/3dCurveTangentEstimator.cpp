@@ -159,11 +159,21 @@ void displayDSS3dTangent( Viewer3D<space, kspace> & viewer,
 			  const DGtal::Color & color3d )
 {
   typedef typename Naive3DDSSComputer::Point3d Point;
-  typedef typename Naive3DDSSComputer::PointD3d PointD3d;
+  typedef typename Naive3DDSSComputer::Integer Integer;
+  typedef typename Naive3DDSSComputer::PointR3d PointR3d;
   typedef typename Display3D<>::BallD3D PointD3D;
   Point directionZ3;
-  PointD3d P1, P2, direction, intercept, thickness;
-  dss3d.getParameters( directionZ3, intercept, thickness );
+  PointR3d interceptR, thicknessR;
+  Z3i::RealPoint P1, P2, direction, intercept, thickness;  
+  dss3d.getParameters( directionZ3, interceptR, thicknessR );
+  
+  intercept[0] = (double) NumberTraits<Integer>::castToInt64_t ( interceptR[0].first ) / (double) NumberTraits<Integer>::castToInt64_t ( interceptR[0].second );
+  intercept[1] = (double) NumberTraits<Integer>::castToInt64_t ( interceptR[1].first ) / (double) NumberTraits<Integer>::castToInt64_t ( interceptR[1].second );
+  intercept[2] = (double) NumberTraits<Integer>::castToInt64_t ( interceptR[2].first ) / (double) NumberTraits<Integer>::castToInt64_t ( interceptR[2].second );
+  thickness[0] = (double) NumberTraits<Integer>::castToInt64_t ( thicknessR[0].first ) / (double) NumberTraits<Integer>::castToInt64_t ( thicknessR[0].second );
+  thickness[1] = (double) NumberTraits<Integer>::castToInt64_t ( thicknessR[1].first ) / (double) NumberTraits<Integer>::castToInt64_t ( thicknessR[1].second );
+  thickness[2] = (double) NumberTraits<Integer>::castToInt64_t ( thicknessR[2].first ) / (double) NumberTraits<Integer>::castToInt64_t ( thicknessR[2].second );
+  
   assign( direction, directionZ3 );
   direction /= direction.norm();
   assign( P1, *dss3d.begin() );
@@ -171,11 +181,11 @@ void displayDSS3dTangent( Viewer3D<space, kspace> & viewer,
   double t1 = (P1 - intercept).dot( direction );
   double t2 = (P2 - intercept).dot( direction );
   
-  PointD3d Q1 = intercept + t1 * direction;
-  PointD3d Q2 = intercept + t2 * direction;
+  Z3i::RealPoint Q1 = intercept + t1 * direction;
+  Z3i::RealPoint Q2 = intercept + t2 * direction;
   viewer.setLineColor(color3d);
-  viewer.addLine( DGtal::Z3i::RealPoint(Q1[ 0 ]-0.5, Q1[ 1 ]-0.5, Q1[ 2 ]-0.5),
-		  DGtal::Z3i::RealPoint(Q2[ 0 ]-0.5, Q2[ 1 ]-0.5, Q2[ 2 ]-0.5),
+  viewer.addLine( Z3i::RealPoint(Q1[ 0 ]-0.5, Q1[ 1 ]-0.5, Q1[ 2 ]-0.5),
+		  Z3i::RealPoint(Q2[ 0 ]-0.5, Q2[ 1 ]-0.5, Q2[ 2 ]-0.5),
 		  MS3D_LINESIZE );
 }
 
@@ -245,13 +255,13 @@ void displayProj2d( Viewer3D<space, kspace> & viewer,
 }
 
 
-template <typename KSpace, typename StandardDSS6Computer, typename space, typename kspace >
+template <typename KSpace, typename Naive3DDSSComputer, typename space, typename kspace >
 void displayDSS2d( Viewer3D<space, kspace> & viewer,
-		   const KSpace & ks, const StandardDSS6Computer & dss3d,
+		   const KSpace & ks, const Naive3DDSSComputer & dss3d,
 		   const DGtal::Color & color2d )
 {
-  typedef typename StandardDSS6Computer::ConstIterator ConstIterator3d;
-  typedef typename StandardDSS6Computer::ArithmeticalDSSComputer2d ArithmeticalDSSComputer2d;
+  typedef typename Naive3DDSSComputer::ConstIterator ConstIterator3d;
+  typedef typename Naive3DDSSComputer::ArithmeticalDSSComputer2d ArithmeticalDSSComputer2d;
   typedef typename ArithmeticalDSSComputer2d::ConstIterator ConstIterator2d;
   typedef typename ArithmeticalDSSComputer2d::Point Point2d;
   typedef typename KSpace::Cell Cell;
@@ -425,7 +435,7 @@ bool ComputeLMST ( const PointIterator & begin, const PointIterator & end, Tange
   LambdaMST3D < Decomposition > lmst64;
   lmst64.attach ( theDecomposition );
   lmst64.init ( begin, end );
-  lmst64.eval ( std::back_inserter ( tangents ) );
+  lmst64.eval ( begin, end, std::back_inserter ( tangents ) );
   typename TangentSequence::iterator itt = tangents.begin();
   for ( PointIterator it = begin; it != end; ++it, ++itt )
   {
@@ -536,8 +546,8 @@ int main(int argc, char **argv)
     lowerBound = lowerBound.inf( sequence[ j ] );
     upperBound = upperBound.sup( sequence[ j ] );
   }
-  lowerBound -= Point::diagonal( b ) + Point ( 2, 2, 2 );
-  upperBound += Point::diagonal( b + 1 ) + Point ( 2, 2, 2 );
+  lowerBound -= Point::diagonal( b );
+  upperBound += Point::diagonal( b + 1 );
   K3 ks; ks.init( lowerBound, upperBound, true );
   Viewer3D<Z3,K3> viewer( ks );
   trace.beginBlock ( "Tool 3dCurveTangentEstimator" );
