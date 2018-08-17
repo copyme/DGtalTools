@@ -144,9 +144,6 @@ void createList()
   curves3D.push_back("Knot_3_2");
   curvesDesc.push_back("A parametric knot having period 2 * Pi.");
 
-  curves3D.push_back("Knot_3_2");
-  curvesDesc.push_back("A parametric knot having period 2 * Pi.");
-
   curves3D.push_back("Knot_4_1");
   curvesDesc.push_back("A parametric polynomial knot.");
 
