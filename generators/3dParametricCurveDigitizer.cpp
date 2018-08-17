@@ -38,6 +38,7 @@
 #include <icc34.h>
 #include "DGtal/base/Common.h"
 #include "DGtal/helpers/StdDefs.h"
+#include "DGtal/kernel/BasicPointFunctors.h"
 
 #include "DGtal/geometry/curves/parametric/EllipticHelix.h"
 #include "DGtal/geometry/curves/parametric/Knot_3_1.h"
@@ -49,7 +50,8 @@
 #include "DGtal/geometry/curves/parametric/Knot_6_2.h"
 #include "DGtal/geometry/curves/parametric/Knot_7_4.h"
 #include "DGtal/geometry/curves/parametric/UglyNaiveParametricCurveDigitizer3D.h"
-
+#include "DGtal/geometry/curves/parametric/DecoratorParametricCurveTransformation.h"
+#include "DGtal/images/RigidTransformation3D.h"
 
 using namespace DGtal;
 
@@ -75,6 +77,13 @@ using namespace DGtal;
   -k  [ --knext]                   K_NEXT value
   -l  [ --list ]                   List all available curves
   -c  [ --curve]                   A curve to digitize
+  -a [--angle],                    Rotation angle in radians
+  -ox                              X coordinate of origin
+  -oy                              Y coordinate of origin
+  -oz                              Z coordinate of origin
+  -ax                              X component of rotation axis
+  -ay                              Y component of rotation axis
+  -az                              Z component of rotation axis
   -o  [ --output ] arg             Basename of the output file
 
  @endcode
@@ -254,6 +263,13 @@ int main( int argc, char** argv )
   ("knext,k",  po::value<unsigned int>()->default_value(5), "K_NEXT value" )
   ("list,l",  "List all available shapes")
   ("curve,c", po::value<std::string>(), "Shape name")
+  ( "angle,a", po::value<double>()->default_value(0),"Rotation angle in radians." )
+  ( "ox", po::value<double>()->default_value(0),"X coordinate of origin." )
+  ( "oy", po::value<double>()->default_value(0),"Y coordinate of origin." )
+  ( "oz", po::value<double>()->default_value(0),"Z coordinate of origin." )
+  ( "ax", po::value<double>()->default_value(1),"X component of rotation axis." )
+  ( "ay", po::value<double>()->default_value(0),"Y component of rotation axis." )
+  ( "az", po::value<double>()->default_value(0),"Z component of rotation axis." )
   ("output,o", po::value<std::string>(), "Basename of the output file");
 
   bool parseOK = true;
@@ -313,22 +329,35 @@ int main( int argc, char** argv )
   if ( !( vm.count ( "output" ) ) ) missingParam ( "--output" );
   std::string outputName = vm["output"].as < std::string > ( );
 
+  double angle =  vm["angle"].as<double>();
+  double ox =  vm["ox"].as<double>();
+  double oy =  vm["oy"].as<double>();
+  double oz =  vm["oz"].as<double>();
+  double ax =  vm["ax"].as<double>();
+  double ay =  vm["ay"].as<double>();
+  double az =  vm["az"].as<double>();
+
+
+  typedef functors::ForwardRigidTransformation3D < Z3i::Space, functors::Identity, Z3i::RealPoint, Z3i::RealPoint > ForwardTrans;
+  ForwardTrans trans ( Z3i::RealPoint ( ox, oy, oz ), Z3i::RealPoint ( ax, ay, az ), angle, Z3i::RealVector ( 0, 0, 0 ) );
   //We check that the shape is known
   unsigned int id = checkAndRetrunIndex ( curveName );
 
   if ( id == 0 )
   {
     typedef EllipticHelix < Z3i::Space > MyHelix;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyHelix >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyHelix >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyHelix >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyHelix, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef typename UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyHelix helix ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( helix, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &helix );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -336,16 +365,18 @@ int main( int argc, char** argv )
   if ( id == 1 )
   {
     typedef Knot_3_1 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -353,16 +384,18 @@ int main( int argc, char** argv )
   if ( id == 2 )
   {
     typedef Knot_3_2 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -370,16 +403,18 @@ int main( int argc, char** argv )
   if ( id == 3 )
   {
     typedef Knot_4_1 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -387,16 +422,18 @@ int main( int argc, char** argv )
   if ( id == 4 )
   {
     typedef Knot_4_3 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -404,16 +441,18 @@ int main( int argc, char** argv )
   if ( id == 5 )
   {
     typedef Knot_5_1 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -421,16 +460,18 @@ int main( int argc, char** argv )
   if ( id == 6 )
   {
     typedef Knot_5_2 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -438,16 +479,18 @@ int main( int argc, char** argv )
   if ( id == 7 )
   {
     typedef Knot_6_2 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
     MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
@@ -455,16 +498,18 @@ int main( int argc, char** argv )
   if ( id == 8 )
   {
     typedef Knot_7_4 < Z3i::Space > MyKnot;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >  Digitizer;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::DigitalCurve MyDigitalCurve;
-    typedef UglyNaiveParametricCurveDigitizer3D < MyKnot >::MetaData MyMetaData;
+    typedef DecoratorParametricCurveTransformation < MyKnot, ForwardTrans > MyRotatedCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >  Digitizer;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::DigitalCurve MyDigitalCurve;
+    typedef UglyNaiveParametricCurveDigitizer3D < MyRotatedCurve >::MetaData MyMetaData;
 
-    static MyDigitalCurve digitalCurve;
+    MyDigitalCurve digitalCurve;
     MyKnot knot ( param1, param2, param3 );
+    MyRotatedCurve rotCurve ( knot, trans );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
     digitize.setKNext ( knext );
-    digitize.attach ( &knot );
+    digitize.attach ( &rotCurve );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
   }
