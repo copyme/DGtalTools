@@ -308,7 +308,6 @@ int main( int argc, char** argv )
   if ( !( vm.count ( "step" ) ) ) missingParam ( "--step" );
   double step = vm["step"].as < double > ( );
 
-  if ( !( vm.count ( "knext" ) ) ) missingParam ( "--knext" );
   unsigned int knext = vm["knext"].as < unsigned int > ( );
 
   if ( !( vm.count ( "output" ) ) ) missingParam ( "--output" );
@@ -328,6 +327,7 @@ int main( int argc, char** argv )
     MyHelix helix ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &helix );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -344,6 +344,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -360,6 +361,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -376,6 +378,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -392,6 +395,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -408,6 +412,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -424,6 +429,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -440,6 +446,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
@@ -456,6 +463,7 @@ int main( int argc, char** argv )
     MyKnot knot ( param1, param2, param3 );
     Digitizer digitize;
     digitize.init ( tstart, tend, step );
+    digitize.setKNext ( knext );
     digitize.attach ( &knot );
     digitize.digitize ( std::back_insert_iterator < MyDigitalCurve> ( digitalCurve ) );
     Exporter < MyDigitalCurve::const_iterator >::save ( digitalCurve.begin ( ), digitalCurve.end ( ), outputName );
